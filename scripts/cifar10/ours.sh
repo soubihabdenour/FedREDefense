@@ -45,5 +45,6 @@ hyperparameters04='[{
 RESULTS_PATH="results/"
 DATA_PATH="../data/"
 CHECKPOINT_PATH="checkpoints/"
-
+cd ..
+cd ..
 python -u codes/run_ours.py --hp="$hyperparameters04" --RESULTS_PATH="$RESULTS_PATH" --DATA_PATH="$DATA_PATH" --CHECKPOINT_PATH="$CHECKPOINT_PATH" $cmdargs 
