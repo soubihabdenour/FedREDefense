@@ -99,6 +99,38 @@ class Server(Device):
     
     self.models = list(self.model_dict.values())
 
+  def evaluate_poison_attack(model, clean_loader, poison_loader):
+    """
+    Evaluate model performance on both clean and poisoned data
+    """
+    model.eval()
+    clean_correct = 0
+    poison_success = 0
+    total_clean = 0
+    total_poison = 0
+
+    # Evaluate on clean data
+    with torch.no_grad():
+        for data, target in clean_loader:
+            data, target = data.to(device), target.to(device)
+            output = model(data)
+            pred = output.argmax(dim=1)
+            clean_correct += pred.eq(target).sum().item()
+            total_clean += target.size(0)
+
+    # Evaluate on poisoned data
+    with torch.no_grad():
+        for data, target in poison_loader:
+            data, target = data.to(device), target.to(device)
+            output = model(data)
+            pred = output.argmax(dim=1)
+            poison_success += pred.ne(target).sum().item()  # For untargeted attack
+            total_poison += target.size(0)
+
+    clean_acc = 100. * clean_correct / total_clean
+    poison_rate = 100. * poison_success / total_poison
+
+    return clean_acc, poison_rate
 
   def evaluate_ensemble(self):
     return eval_op_ensemble(self.models, self.loader)

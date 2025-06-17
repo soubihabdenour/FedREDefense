@@ -124,6 +124,8 @@ def run_experiment(xp, xp_count, n_experiments):
             clients.append(Client_Scaling(model_name, optimizer_fn, loader, idnum=i, num_classes=num_classes, dataset = hp['dataset']) )
           elif hp["attack_method"] == "DBA":
             clients.append(Client_DBA(model_name, optimizer_fn, loader, idnum=i, num_classes=num_classes, dataset = hp['dataset']) )
+          elif hp["attack_method"] == "DataPoisoning":
+            clients.append(Client_DataPoisoning(model_name, optimizer_fn, loader, idnum=i, num_classes=num_classes, dataset = hp['dataset']) )
           else:
             import pdb; pdb.set_trace()  
 
@@ -188,7 +190,7 @@ def run_experiment(xp, xp_count, n_experiments):
       eval_result = server.evaluate_ensemble().items()
       xp.log({"server_val_{}".format(key) : value for key, value in eval_result })
       print({"server_{}_a_{}".format(key, hp["alpha"]) : value for key, value in eval_result})
-      if hp["attack_method"] in ["DBA", "Scaling", "Backdoor"]:
+      if hp["attack_method"] in ["DBA", "Scaling", "Backdoor", "DataPoisoning"]:
         att_result = server.evaluate_attack().items()
         xp.log({"server_att_{}_a_{}".format(key, hp["alpha"]) : value for key, value in att_result})
         print({"server_att_{}_a_{}".format(key, hp["alpha"]) : value for key, value in att_result})

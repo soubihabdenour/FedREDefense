@@ -147,6 +147,8 @@ def run_experiment(xp, xp_count, n_experiments):
             clients.append(Client_Scaling(model_name, optimizer_fn, loader, idnum=i, num_classes=num_classes, dataset = hp['dataset']) )
           elif hp["attack_method"] == "DBA":
             clients.append(Client_DBA(model_name, optimizer_fn, loader, idnum=i, num_classes=num_classes, dataset = hp['dataset']) )
+          elif hp["attack_method"] == "DataPoisoning":
+            clients.append(Client_DataPoisoning(model_name, optimizer_fn, loader, idnum=i, num_classes=num_classes, dataset = hp['dataset']) )
           else:
             import pdb; pdb.set_trace()  
 
@@ -243,6 +245,15 @@ def run_experiment(xp, xp_count, n_experiments):
       loss = np.array(loss).reshape(-1, 1)
       benign_avg_loss = np.mean(loss[real_label == 0])
       mali_avg_loss = np.mean(loss[real_label == 1])
+
+      import csv
+      csv_path = os.path.join(args.RESULTS_PATH, "metrics_all_rounds.csv")
+      write_header = not os.path.exists(csv_path)
+      with open(csv_path, mode='a', newline='') as csvfile:
+          writer = csv.DictWriter(csvfile, fieldnames=["round", "dacc", "drecall", "dfpr", "dfnr", "benign_avg_loss", "mali_avg_loss"])
+          if write_header:
+              writer.writeheader()
+          writer.writerow({"round": c_round, "dacc": acc, "drecall": recall, "dfpr": fpr, "dfnr": fnr, "benign_avg_loss": benign_avg_loss, "mali_avg_loss": mali_avg_loss})
       print({"dacc":acc, "drecall":recall, "dfpr":fpr, "dfnr":fnr, "benign_avg_loss":benign_avg_loss, "mali_avg_loss":mali_avg_loss})
 
       filtered_clients = [item for item, label in zip(participating_clients, pred_label) if label==0]
@@ -261,7 +272,7 @@ def run_experiment(xp, xp_count, n_experiments):
       xp.log({'communication_round' : c_round, 'epochs' : c_round*hp['local_epochs']})
       xp.log({key : clients[0].optimizer.__dict__['param_groups'][0][key] for key in optimizer_hp})
       print({"server_{}_a_{}".format(key, hp["alpha"]) : value for key, value in server.evaluate_ensemble().items()})
-      if hp["attack_method"] in ["DBA", "Scaling"]:
+      if hp["attack_method"] in ["DBA", "Scaling", "DataPoisoning"]:
         xp.log({"server_att_{}_a_{}".format(key, hp["alpha"]) : value for key, value in server.evaluate_attack().items()})
         print({"server_att_{}_a_{}".format(key, hp["alpha"]) : value for key, value in server.evaluate_attack().items()})
 

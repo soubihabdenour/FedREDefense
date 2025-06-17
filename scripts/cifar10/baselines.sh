@@ -8,7 +8,7 @@ hyperparameters04='[{
     "models" : [{"ConvNet" : 100}],
 
     "attack_rate" :  [0.28],
-    "attack_method": ["Scaling"],
+    "attack_method": ["DataPoisoning"],
     "participation_rate" : [1],
 
     "alpha" : [0.1],
@@ -16,7 +16,7 @@ hyperparameters04='[{
     "local_epochs" : [2],
     "batch_size" : [32],
     "local_optimizer" : [ ["SGD", {"lr": 0.001}]],
-    "aggregation_mode" : ["NormBound", "FedAVG"],
+    "aggregation_mode" : ["FedAVG"],
     "pretrained" : [null],
     "save_model" : [null],
     "log_frequency" : [1],
@@ -28,5 +28,7 @@ hyperparameters04='[{
 RESULTS_PATH="results/"
 DATA_PATH="../data/"
 CHECKPOINT_PATH="checkpoints/"
+cd ../..
+
 
 python -u codes/run_agrs.py --hp="$hyperparameters04"  --RESULTS_PATH="$RESULTS_PATH" --DATA_PATH="$DATA_PATH" --CHECKPOINT_PATH="$CHECKPOINT_PATH" $cmdargs

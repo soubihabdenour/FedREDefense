@@ -4,15 +4,50 @@ import itertools as it
 import matplotlib.pyplot as plt
 
 
-
 def save_results(results_dict, path, name, verbose=True):
-    results_numpy = {key : np.array(value)for key, value in results_dict.items()}
+    import pandas as pd
 
     if not os.path.exists(path):
         os.makedirs(path)
-    np.savez(path+name, **results_numpy) 
+
+    # Save original NPZ format
+    results_numpy = {key: np.array(value) for key, value in results_dict.items()}
+    np.savez(path + name, **results_numpy)
+
+    # Save hyperparameters to txt file
+    if 'hyperparameters' in results_dict:
+        hp_file = path + name + '_hyperparameters.txt'
+        with open(hp_file, 'w') as f:
+            f.write("Experiment Hyperparameters\n")
+            f.write("=" * 50 + "\n\n")
+            hp_dict = results_dict['hyperparameters']
+            if isinstance(hp_dict, np.ndarray) and len(hp_dict) == 1:
+                hp_dict = hp_dict[0]
+            for key, value in sorted(hp_dict.items()):
+                f.write(f"{key}: {value}\n")
+
+    # Save metrics to CSV
+    metrics_dict = {}
+    for key, value in results_dict.items():
+        # Skip hyperparameters as they're saved separately
+        if key != 'hyperparameters':
+            if isinstance(value, (list, np.ndarray)):
+                # For array metrics (like loss/accuracy over rounds)
+                for i, v in enumerate(value):
+                    metrics_dict[f"{key}_round_{i + 1}"] = v
+            else:
+                # For single value metrics
+                metrics_dict[key] = value
+
+    # Convert to DataFrame and save as CSV
+    metrics_df = pd.DataFrame([metrics_dict])
+    csv_file = path + name + '_metrics.csv'
+    metrics_df.to_csv(csv_file, index=False)
+
     if verbose:
-        print("Saved results to ", path+name+".npz")
+        print(f"Saved results to {path + name}.npz")
+        print(f"Saved hyperparameters to {hp_file}")
+        print(f"Saved metrics to {csv_file}")
 
 
 def load_results(path, filename, verbose=True):

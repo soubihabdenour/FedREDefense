@@ -34,6 +34,46 @@ class Device(object):
       if verbose: print("Loaded model from", path+name)
   
 class Client(Device):
+  """
+  Represents a client device in a federated learning setting.
+
+  This class is designed to simulate a client device participating in a federated
+  learning environment. A client trains its local machine learning model using
+  its private data, communicates with a central server for synchronization,
+  and performs associated operations such as predicting logits for given inputs.
+
+  Attributes
+  ----------
+  id : int
+      The unique identifier for the client.
+  model_name : str
+      The name of the machine learning model used by the client.
+  model_fn : callable
+      A function to construct the model architecture.
+  model : torch.nn.Module
+      The model instance used for training and inference.
+  W : dict
+      A dictionary of the model's named parameters.
+  optimizer_fn : callable
+      A function to create an optimizer for training the model.
+  optimizer : torch.optim.Optimizer
+      The optimizer instance used to update the model parameters.
+
+  Parameters
+  ----------
+  model_name : str
+      Specifies the name of the model to initialize.
+  optimizer_fn : callable
+      A function that takes model parameters as input and returns a PyTorch optimizer.
+  loader : DataLoader
+      A PyTorch DataLoader instance that provides access to training data.
+  idnum : int, optional
+      The unique identifier for the client, default is 0.
+  num_classes : int, optional
+      Number of output classes for classification tasks, default is 10.
+  dataset : str, optional
+      The name of the dataset associated with the client, default is 'cifar10'.
+  """
   def __init__(self, model_name, optimizer_fn, loader, idnum=0, num_classes=10, dataset = 'cifar10'):
     super().__init__(loader)
     self.id = idnum
@@ -73,6 +113,127 @@ class Client(Device):
     with torch.no_grad():
       y_ = self.model(x)
 
+    return y_
+
+class Client_DataPoisoning(Client):
+  """
+  A specialized client for implementing data poisoning attacks
+  in the federated learning environment.
+  """
+  def __init__(self, model_name, optimizer_fn, loader, idnum=0, num_classes=10, dataset='cifar10', poison_strategy=None):
+    super().__init__(model_name, optimizer_fn, loader, idnum, num_classes, dataset)
+    self.poison_strategy = poison_strategy or self.default_poison_strategy
+
+  def default_poison_strategy(self, data, targets):
+    """
+    Default poisoning strategy that modifies data by adding random noise
+    and flipping the labels for targeted classes.
+
+    Parameters:
+    -----------
+    data : torch.Tensor
+        Input data to be poisoned.
+    targets : torch.Tensor
+        Ground truth labels for the data.
+
+    Returns:
+    --------
+    poisoned_data : torch.Tensor
+        Modified data.
+    poisoned_targets : torch.Tensor
+        Modified labels.
+    """
+    # Add Gaussian noise to the data
+    noise = torch.randn_like(data) * 0.1
+    poisoned_data = data + noise
+
+    # Flip labels for a specific class (e.g., class 0 → class 1)
+    poisoned_targets = targets.clone()
+    target_class = 0
+    flip_class = 1
+    poisoned_targets[targets == target_class] = flip_class
+
+    return data, poisoned_targets
+
+  def compute_weight_update(self, epochs=1, loader=None, print_train_loss=False, hp=None):
+    """
+    Compute weight updates for the local model using poisoned data.
+
+    Parameters:
+    -----------
+    epochs : int
+        Number of epochs to train the local model.
+    loader : DataLoader, optional
+        Custom DataLoader if needed.
+
+    Returns:
+    --------
+    train_stats : dict
+        Statistics from the training process.
+    """
+    train_stats = {"loss": []}
+    self.model.train()
+    loader = self.loader if not loader else loader
+
+    for epoch in range(epochs):
+      epoch_loss = 0
+      for batch_idx, (data, targets) in enumerate(loader):
+        data, targets = data.to(device), targets.to(device)
+
+        # Apply poisoning strategy
+        poisoned_data, poisoned_targets = self.poison_strategy(data, targets)
+
+        # Standard training procedure
+        self.optimizer.zero_grad()
+        outputs = self.model(poisoned_data)
+        loss = nn.CrossEntropyLoss()(outputs, poisoned_targets)
+        loss.backward()
+        self.optimizer.step()
+
+        epoch_loss += loss.item()
+
+      if print_train_loss:
+        print(f"Epoch {epoch + 1}, Loss: {epoch_loss:.4f}")
+      train_stats["loss"].append(epoch_loss)
+
+    return train_stats
+
+  def predict_logit(self, x):
+    """
+    Predict logits from input.
+
+    Parameters:
+    -----------
+    x : torch.Tensor
+        Input data.
+
+    Returns:
+    --------
+    y_ : torch.Tensor
+        Predicted logits from the model.
+    """
+    self.model.train()
+    with torch.no_grad():
+      y_ = self.model(x)
+    return y_
+
+  def predict_logit_eval(self, x):
+    """
+    Predict logits in evaluation mode.
+
+    Parameters:
+    -----------
+    x : torch.Tensor
+        Input data.
+
+    Returns:
+    --------
+    y_ : torch.Tensor
+        Predicted logits from the model.
+    """
+    self.model.eval()
+    with torch.no_grad():
+      y_ = self.model(x)
     return y_
 
 class Client_flip(Device):
