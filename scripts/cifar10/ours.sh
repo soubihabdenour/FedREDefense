@@ -7,15 +7,15 @@ hyperparameters04='[{
     "dataset" : ["cifar10"],
     "models" : [{"ConvNet" : 100}],
 
-    "attack_rate" :  [0.6],
-    "attack_method": ["DataPoisoning"],
+    "attack_rate" :  [0.28],
+    "attack_method": ["label_flip"],
     "participation_rate" : [0.1],
 
     "alpha" : [0.1],
 
     "distill_interval": [1],
-    "communication_rounds" : [30],
-    "local_epochs" : [1],
+    "communication_rounds" : [300],
+    "local_epochs" : [2],
     "batch_size" : [32],
 
     "local_optimizer" : [ ["SGD", {"lr": 0.001}]],
@@ -36,7 +36,7 @@ hyperparameters04='[{
 
     "pretrained" : [null],
     "save_model" : [null],
-    "log_frequency" : [1],
+    "log_frequency" : [10],
     "log_path" : ["new_noniid/"]}]
 
 '

@@ -8,8 +8,8 @@ hyperparameters04='[{
     "models" : [{"ConvNet" : 100}],
 
     "attack_rate" :  [0.28],
-    "attack_method": ["DataPoisoning"],
-    "participation_rate" : [1],
+    "attack_method": ["Scaling"],
+    "participation_rate" : [0.1],
 
     "alpha" : [0.1],
     "communication_rounds" : [300],

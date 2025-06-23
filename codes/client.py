@@ -155,6 +155,56 @@ class Client_DataPoisoning(Client):
 
     return data, poisoned_targets
 
+  def trigger_or_edgecase_poison_strategy(data, targets, model=None, mode="trigger", target_label=0, poison_ratio=0.1):
+    """
+    Poisoning strategy that supports 'trigger' and 'edgecase' backdoor attacks.
+
+    Parameters:
+    -----------
+    data : torch.Tensor
+        Input images (N, C, H, W)
+    targets : torch.Tensor
+        Ground truth labels
+    model : torch.nn.Module, optional
+        Model used for edge-case confidence evaluation
+    mode : str
+        Either 'trigger' or 'edgecase'
+    target_label : int
+        Label to assign to poisoned samples
+    poison_ratio : float
+        Fraction of samples to poison (used in trigger mode)
+
+    Returns:
+    --------
+    poisoned_data : torch.Tensor
+    poisoned_targets : torch.Tensor
+    """
+    data = data.clone()
+    targets = targets.clone()
+
+    if mode == "trigger":
+      torch.manual_seed(42)
+      num_poison = int(poison_ratio * data.size(0))
+      poison_indices = torch.randperm(data.size(0))[:num_poison]
+
+      for idx in poison_indices:
+        # Add 3×3 white square trigger at bottom-right
+        data[idx, :, -3:, -3:] = 1.0
+        targets[idx] = target_label
+
+    elif mode == "edgecase" and model is not None:
+      model.eval()
+      with torch.no_grad():
+        outputs = model(data)
+        probs = torch.softmax(outputs, dim=1)
+        confidences = probs.max(dim=1).values
+        low_conf_idx = (confidences < 0.5).nonzero(as_tuple=True)[0]
+
+      for idx in low_conf_idx:
+        targets[idx] = target_label
+
+    return data, targets
+
   def compute_weight_update(self, epochs=1, loader=None, print_train_loss=False, hp=None):
     """
     Compute weight updates for the local model using poisoned data.

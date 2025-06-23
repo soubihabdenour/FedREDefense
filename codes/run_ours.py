@@ -148,7 +148,8 @@ def run_experiment(xp, xp_count, n_experiments):
           elif hp["attack_method"] == "DBA":
             clients.append(Client_DBA(model_name, optimizer_fn, loader, idnum=i, num_classes=num_classes, dataset = hp['dataset']) )
           elif hp["attack_method"] == "DataPoisoning":
-            clients.append(Client_DataPoisoning(model_name, optimizer_fn, loader, idnum=i, num_classes=num_classes, dataset = hp['dataset']) )
+            clients.append(Client_DataPoisoning(model_name, optimizer_fn, loader, idnum=i, num_classes=num_classes, dataset = hp['dataset'],
+                           poison_strategy=partial(trigger_or_edgecase_poison_strategy, mode="trigger", target_label=0, poison_ratio=0.1)))
           else:
             import pdb; pdb.set_trace()  
 
@@ -246,15 +247,7 @@ def run_experiment(xp, xp_count, n_experiments):
       benign_avg_loss = np.mean(loss[real_label == 0])
       mali_avg_loss = np.mean(loss[real_label == 1])
 
-      import csv
-      csv_path = os.path.join(args.RESULTS_PATH, "metrics_all_rounds.csv")
-      write_header = not os.path.exists(csv_path)
-      with open(csv_path, mode='a', newline='') as csvfile:
-          writer = csv.DictWriter(csvfile, fieldnames=["round", "dacc", "drecall", "dfpr", "dfnr", "benign_avg_loss", "mali_avg_loss"])
-          if write_header:
-              writer.writeheader()
-          writer.writerow({"round": c_round, "dacc": acc, "drecall": recall, "dfpr": fpr, "dfnr": fnr, "benign_avg_loss": benign_avg_loss, "mali_avg_loss": mali_avg_loss})
-      print({"dacc":acc, "drecall":recall, "dfpr":fpr, "dfnr":fnr, "benign_avg_loss":benign_avg_loss, "mali_avg_loss":mali_avg_loss})
+
 
       filtered_clients = [item for item, label in zip(participating_clients, pred_label) if label==0]
       if "median" in hp["aggregation_mode"]:
@@ -274,11 +267,40 @@ def run_experiment(xp, xp_count, n_experiments):
       print({"server_{}_a_{}".format(key, hp["alpha"]) : value for key, value in server.evaluate_ensemble().items()})
       if hp["attack_method"] in ["DBA", "Scaling", "DataPoisoning"]:
         xp.log({"server_att_{}_a_{}".format(key, hp["alpha"]) : value for key, value in server.evaluate_attack().items()})
-        print({"server_att_{}_a_{}".format(key, hp["alpha"]) : value for key, value in server.evaluate_attack().items()})
+        print({"server_att_{}_ab_{}".format(key, hp["alpha"]) : value for key, value in server.evaluate_attack().items()})
 
       stats = server.evaluate_ensemble()
       test_accs.append(stats['test_accuracy'])
       xp.save_to_disc(path=args.RESULTS_PATH, name="logfiles")
+
+
+      import csv
+      csv_path = os.path.join(args.RESULTS_PATH, "metrics_all_rounds.csv")
+      write_header = not os.path.exists(csv_path)
+      server_attack_acc = None
+      server_test_accuracy = server.evaluate_ensemble()["test_accuracy"]
+      if hp["attack_method"] in ["DBA", "Scaling", "DataPoisoning"]:
+        #attack_stats = server.evaluate_attack()
+        server_attack_acc = server.evaluate_attack()["accuracy"]
+      with open(csv_path, mode='a', newline='') as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=["round", "tacc", "dacc", "drecall", "dfpr", "dfnr", "benign_avg_loss",
+                                                     "mali_avg_loss", "server_attack_acc"])
+        if write_header:
+          writer.writeheader()
+        writer.writerow({
+          "round": c_round,
+          "tacc": server_test_accuracy,
+          "dacc": acc,
+          "drecall": recall,
+          "dfpr": fpr,
+          "dfnr": fnr,
+          "benign_avg_loss": benign_avg_loss,
+          "mali_avg_loss": mali_avg_loss,
+          "server_attack_acc": server_attack_acc
+        })
+      print({"dacc": acc, "drecall": recall, "dfpr": fpr, "dfnr": fnr, "benign_avg_loss": benign_avg_loss,
+             "mali_avg_loss": mali_avg_loss, "server_attack_acc": server_attack_acc})
+
 
   # Save model to disk
   server.save_model(path=args.CHECKPOINT_PATH, name=hp["save_model"])
