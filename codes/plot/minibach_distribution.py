@@ -68,7 +68,7 @@ def compute_gradient_norms(model, loader, optimizer, loss_fn):
 # Load data
 transform = transforms.ToTensor()
 trainset_clean = datasets.MNIST(root='./data', train=True, download=True, transform=transform)
-trainset_poison = poison_data(trainset_clean, poison_fraction=0)
+trainset_poison = poison_data(trainset_clean, poison_fraction=0.3)
 
 # Small subset for quick testing
 subset_clean = torch.utils.data.Subset(trainset_clean, range(32))

@@ -8,11 +8,11 @@ hyperparameters04='[{
     "models" : [{"ConvNet" : 100}],
 
     "attack_rate" :  [0.28],
-    "attack_method": ["Scaling"],
+    "attack_method": ["DataPoisoning"],
     "participation_rate" : [0.1],
 
     "alpha" : [0.1],
-    "communication_rounds" : [300],
+    "communication_rounds" : [30],
     "local_epochs" : [2],
     "batch_size" : [32],
     "local_optimizer" : [ ["SGD", {"lr": 0.001}]],

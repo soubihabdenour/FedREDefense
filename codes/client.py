@@ -198,7 +198,7 @@ class Client_DataPoisoning(Client):
         outputs = model(data)
         probs = torch.softmax(outputs, dim=1)
         confidences = probs.max(dim=1).values
-        low_conf_idx = (confidences < 0.5).nonzero(as_tuple=True)[0]
+        low_conf_idx = (confidences < 0.3).nonzero(as_tuple=True)[0]
 
       for idx in low_conf_idx:
         targets[idx] = target_label

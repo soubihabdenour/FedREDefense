@@ -23,7 +23,7 @@ def set_seed(seed=42):
     # torch.use_deterministic_algorithms(True)
 
 # Use at the top of your script
-set_seed(32)
+set_seed(3)
 
 # Use GPU if available
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -54,11 +54,11 @@ def poison_data(dataset, source_label=1, target_label=7, poison_fraction=0.95):
 # 📦 Load data
 transform = transforms.ToTensor()
 clean_dataset = datasets.MNIST(root='./data', train=True, download=True, transform=transform)
-poisoned_dataset = poison_data(clean_dataset, poison_fraction=0)
+poisoned_dataset = poison_data(clean_dataset, poison_fraction=0.3)
 
 # Small subsets for speed
-subset_clean = torch.utils.data.Subset(clean_dataset, range(32))
-subset_poison = torch.utils.data.Subset(poisoned_dataset, range(512))
+subset_clean = torch.utils.data.Subset(clean_dataset, range(512))
+subset_poison = torch.utils.data.Subset(poisoned_dataset, range(32))
 loader_clean = DataLoader(subset_clean, batch_size=8, shuffle=True)
 loader_poison = DataLoader(subset_poison, batch_size=8, shuffle=True)
 
