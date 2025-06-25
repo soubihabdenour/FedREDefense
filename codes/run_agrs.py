@@ -190,11 +190,11 @@ def run_experiment(xp, xp_count, n_experiments):
       eval_result = server.evaluate_ensemble().items()
       xp.log({"server_val_{}".format(key) : value for key, value in eval_result })
       print({"server_{}_a_{}".format(key, hp["alpha"]) : value for key, value in eval_result})
-      if hp["attack_method"] in ["DBA", "Scaling", "Backdoor", "DataPoisoning"]:
+      if hp["attack_method"] in ["DBA", "Scaling", "Backdoor"]:
         att_result = server.evaluate_attack().items()
         xp.log({"server_att_{}_a_{}".format(key, hp["alpha"]) : value for key, value in att_result})
         print({"server_att_{}_a_{}".format(key, hp["alpha"]) : value for key, value in att_result})
-      if hp["attack_method"] in ["targeted_label_flip"]:
+      if hp["attack_method"] in ["targeted_label_flip", "DataPoisoning"]:
         att_result = server.evaluate_tr_lf_attack().items()
         xp.log({"server_att_{}_a_{}".format(key, hp["alpha"]) : value for key, value in att_result})
         print({"server_att_{}_a_{}".format(key, hp["alpha"]) : value for key, value in att_result})

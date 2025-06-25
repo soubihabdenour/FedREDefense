@@ -148,8 +148,7 @@ def run_experiment(xp, xp_count, n_experiments):
           elif hp["attack_method"] == "DBA":
             clients.append(Client_DBA(model_name, optimizer_fn, loader, idnum=i, num_classes=num_classes, dataset = hp['dataset']) )
           elif hp["attack_method"] == "DataPoisoning":
-            clients.append(Client_DataPoisoning(model_name, optimizer_fn, loader, idnum=i, num_classes=num_classes, dataset = hp['dataset'],
-                           poison_strategy=partial(trigger_or_edgecase_poison_strategy, mode="trigger", target_label=0, poison_ratio=0.1)))
+            clients.append(Client_DataPoisoning(model_name, optimizer_fn, loader, idnum=i, num_classes=num_classes, dataset = hp['dataset']))
           else:
             import pdb; pdb.set_trace()  
 

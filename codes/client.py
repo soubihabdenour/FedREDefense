@@ -155,7 +155,7 @@ class Client_DataPoisoning(Client):
 
     return data, poisoned_targets
 
-  def trigger_or_edgecase_poison_strategy(data, targets, model=None, mode="trigger", target_label=0, poison_ratio=0.1):
+  def trigger_or_edgecase_poison_strategy(data, targets, model=None, mode="trigger", target_label=2, poison_ratio=1):
     """
     Poisoning strategy that supports 'trigger' and 'edgecase' backdoor attacks.
 
@@ -188,19 +188,16 @@ class Client_DataPoisoning(Client):
       poison_indices = torch.randperm(data.size(0))[:num_poison]
 
       for idx in poison_indices:
-        # Add 3×3 white square trigger at bottom-right
-        data[idx, :, -3:, -3:] = 1.0
+        # Add 3×3 white trigger at bottom-right
+        data[idx, :, -12:, -12:] = 1.0
         targets[idx] = target_label
 
-    elif mode == "edgecase" and model is not None:
-      model.eval()
-      with torch.no_grad():
-        outputs = model(data)
-        probs = torch.softmax(outputs, dim=1)
-        confidences = probs.max(dim=1).values
-        low_conf_idx = (confidences < 0.3).nonzero(as_tuple=True)[0]
+    elif mode == "edgecase":
+      torch.manual_seed(42)
+      num_poison = int(poison_ratio * data.size(0))
+      poison_indices = torch.randperm(data.size(0))[:num_poison]
 
-      for idx in low_conf_idx:
+      for idx in poison_indices:
         targets[idx] = target_label
 
     return data, targets
