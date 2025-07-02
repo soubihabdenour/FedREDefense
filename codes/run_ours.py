@@ -80,7 +80,7 @@ def threshold_detection(loss, real_label, threshold=0.6):
   fnr = np.sum(label_pred[real_label==1]==0)/nobyz
   return acc, recall, fpr, fnr, label_pred
 
-def run_experiment(xp, xp_count, n_experiments):
+def zzzrun_experiment(xp, xp_count, n_experiments):
   print(xp)
   hp = xp.hyperparameters
   args.attack_method = hp["attack_method"] 
